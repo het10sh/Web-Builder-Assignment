@@ -2,8 +2,8 @@ const tools = document.querySelectorAll('.tool');
 const canvas = document.getElementById('canvas');
 const editor = document.getElementById('editor');
 const form = document.getElementById('editForm');
-const deleteBtn = document.getElementById('deleteBtn');
 
+const deleteBtn = document.getElementById('deleteBtn');
 const editText = document.getElementById('editText');
 const editColor = document.getElementById('editColor');
 const editSize = document.getElementById('editSize');
@@ -15,6 +15,34 @@ let offsetX, offsetY;
 tools.forEach(tool => {
   tool.addEventListener('dragstart', e => {
     e.dataTransfer.setData('type', tool.dataset.type);
+  });
+
+  tool.addEventListener('click', () => {
+    const type = tool.dataset.type;
+    let el;
+
+    if (type === 'text') {
+      el = document.createElement('p');
+      el.textContent = 'Edit me!';
+    } else if (type === 'image') {
+      el = document.createElement('img');
+      el.src = 'https://via.placeholder.com/150';
+      el.style.width = '150px';
+    } else if (type === 'button') {
+      el = document.createElement('button');
+      el.textContent = 'Click me';
+      el.style.backgroundColor = '#00ffe0';
+    }
+
+    el.classList.add('element');
+    el.style.left = `20px`;
+    el.style.top = `20px`;
+
+    enableDragging(el);
+    el.addEventListener('click', () => openEditor(el));
+    canvas.appendChild(el);
+    adjustCanvasHeight();
+    document.querySelector('.placeholder')?.remove();
   });
 });
 
@@ -45,29 +73,28 @@ canvas.addEventListener('drop', e => {
   enableDragging(el);
   el.addEventListener('click', () => openEditor(el));
   canvas.appendChild(el);
-
   adjustCanvasHeight();
   document.querySelector('.placeholder')?.remove();
 });
 
 function enableDragging(el) {
-  el.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
-    selectedElement = el;
+  el.addEventListener('mousedown', startDrag);
+  el.addEventListener('touchstart', startTouchDrag, { passive: false });
+}
 
-    offsetX = e.clientX - el.getBoundingClientRect().left;
-    offsetY = e.clientY - el.getBoundingClientRect().top;
+function startDrag(e) {
+  if (e.button !== 0) return;
+  selectedElement = e.target;
+  offsetX = e.clientX - selectedElement.getBoundingClientRect().left;
+  offsetY = e.clientY - selectedElement.getBoundingClientRect().top;
 
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', drop);
-  });
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('mouseup', drop);
 }
 
 function drag(e) {
   if (!selectedElement) return;
-
   const canvasRect = canvas.getBoundingClientRect();
-
   let newX = e.clientX - canvasRect.left - offsetX;
   let newY = e.clientY - canvasRect.top - offsetY;
 
@@ -76,13 +103,46 @@ function drag(e) {
 
   selectedElement.style.left = `${newX}px`;
   selectedElement.style.top = `${newY}px`;
-
   adjustCanvasHeight();
 }
 
 function drop() {
   document.removeEventListener('mousemove', drag);
   document.removeEventListener('mouseup', drop);
+  selectedElement = null;
+}
+
+function startTouchDrag(e) {
+  if (e.touches.length !== 1) return;
+  e.preventDefault();
+  selectedElement = e.target;
+  const touch = e.touches[0];
+  offsetX = touch.clientX - selectedElement.getBoundingClientRect().left;
+  offsetY = touch.clientY - selectedElement.getBoundingClientRect().top;
+
+  document.addEventListener('touchmove', touchDrag, { passive: false });
+  document.addEventListener('touchend', touchDrop);
+}
+
+function touchDrag(e) {
+  if (!selectedElement || e.touches.length !== 1) return;
+  e.preventDefault();
+  const canvasRect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  let newX = touch.clientX - canvasRect.left - offsetX;
+  let newY = touch.clientY - canvasRect.top - offsetY;
+
+  newX = Math.max(0, Math.min(newX, canvas.offsetWidth - selectedElement.offsetWidth));
+  newY = Math.max(0, newY);
+
+  selectedElement.style.left = `${newX}px`;
+  selectedElement.style.top = `${newY}px`;
+  adjustCanvasHeight();
+}
+
+function touchDrop() {
+  document.removeEventListener('touchmove', touchDrag);
+  document.removeEventListener('touchend', touchDrop);
   selectedElement = null;
 }
 
