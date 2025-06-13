@@ -2,8 +2,9 @@ const tools = document.querySelectorAll('.tool');
 const canvas = document.getElementById('canvas');
 const editor = document.getElementById('editor');
 const form = document.getElementById('editForm');
-
 const deleteBtn = document.getElementById('deleteBtn');
+const toggleBtn = document.getElementById('toggleEditor');
+
 const editText = document.getElementById('editText');
 const editColor = document.getElementById('editColor');
 const editSize = document.getElementById('editSize');
@@ -17,26 +18,24 @@ tools.forEach(tool => {
     e.dataTransfer.setData('type', tool.dataset.type);
   });
 
-  tool.addEventListener('click', () => {
+  // Touch support for mobile
+  tool.addEventListener('touchstart', e => {
     const type = tool.dataset.type;
-    let el;
+    const touch = e.touches[0];
+    const el = document.createElement(type === 'text' ? 'p' : type === 'image' ? 'img' : 'button');
 
-    if (type === 'text') {
-      el = document.createElement('p');
-      el.textContent = 'Edit me!';
-    } else if (type === 'image') {
-      el = document.createElement('img');
+    if (type === 'text') el.textContent = 'Edit me!';
+    else if (type === 'image') {
       el.src = 'https://via.placeholder.com/150';
       el.style.width = '150px';
-    } else if (type === 'button') {
-      el = document.createElement('button');
+    } else {
       el.textContent = 'Click me';
       el.style.backgroundColor = '#00ffe0';
     }
 
     el.classList.add('element');
-    el.style.left = `20px`;
-    el.style.top = `20px`;
+    el.style.left = `${touch.clientX - canvas.getBoundingClientRect().left}px`;
+    el.style.top = `${touch.clientY - canvas.getBoundingClientRect().top}px`;
 
     enableDragging(el);
     el.addEventListener('click', () => openEditor(el));
@@ -53,15 +52,15 @@ canvas.addEventListener('drop', e => {
   const type = e.dataTransfer.getData('type');
   let el;
 
-  if (type === 'text') {
-    el = document.createElement('p');
-    el.textContent = 'Edit me!';
-  } else if (type === 'image') {
-    el = document.createElement('img');
+  if (type === 'text') el = document.createElement('p');
+  else if (type === 'image') el = document.createElement('img');
+  else el = document.createElement('button');
+
+  if (type === 'text') el.textContent = 'Edit me!';
+  else if (type === 'image') {
     el.src = 'https://via.placeholder.com/150';
     el.style.width = '150px';
-  } else if (type === 'button') {
-    el = document.createElement('button');
+  } else {
     el.textContent = 'Click me';
     el.style.backgroundColor = '#00ffe0';
   }
@@ -73,28 +72,29 @@ canvas.addEventListener('drop', e => {
   enableDragging(el);
   el.addEventListener('click', () => openEditor(el));
   canvas.appendChild(el);
+
   adjustCanvasHeight();
   document.querySelector('.placeholder')?.remove();
 });
 
 function enableDragging(el) {
-  el.addEventListener('mousedown', startDrag);
-  el.addEventListener('touchstart', startTouchDrag, { passive: false });
-}
+  el.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    selectedElement = el;
 
-function startDrag(e) {
-  if (e.button !== 0) return;
-  selectedElement = e.target;
-  offsetX = e.clientX - selectedElement.getBoundingClientRect().left;
-  offsetY = e.clientY - selectedElement.getBoundingClientRect().top;
+    offsetX = e.clientX - el.getBoundingClientRect().left;
+    offsetY = e.clientY - el.getBoundingClientRect().top;
 
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('mouseup', drop);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', drop);
+  });
 }
 
 function drag(e) {
   if (!selectedElement) return;
+
   const canvasRect = canvas.getBoundingClientRect();
+
   let newX = e.clientX - canvasRect.left - offsetX;
   let newY = e.clientY - canvasRect.top - offsetY;
 
@@ -103,6 +103,7 @@ function drag(e) {
 
   selectedElement.style.left = `${newX}px`;
   selectedElement.style.top = `${newY}px`;
+
   adjustCanvasHeight();
 }
 
@@ -112,43 +113,10 @@ function drop() {
   selectedElement = null;
 }
 
-function startTouchDrag(e) {
-  if (e.touches.length !== 1) return;
-  e.preventDefault();
-  selectedElement = e.target;
-  const touch = e.touches[0];
-  offsetX = touch.clientX - selectedElement.getBoundingClientRect().left;
-  offsetY = touch.clientY - selectedElement.getBoundingClientRect().top;
-
-  document.addEventListener('touchmove', touchDrag, { passive: false });
-  document.addEventListener('touchend', touchDrop);
-}
-
-function touchDrag(e) {
-  if (!selectedElement || e.touches.length !== 1) return;
-  e.preventDefault();
-  const canvasRect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  let newX = touch.clientX - canvasRect.left - offsetX;
-  let newY = touch.clientY - canvasRect.top - offsetY;
-
-  newX = Math.max(0, Math.min(newX, canvas.offsetWidth - selectedElement.offsetWidth));
-  newY = Math.max(0, newY);
-
-  selectedElement.style.left = `${newX}px`;
-  selectedElement.style.top = `${newY}px`;
-  adjustCanvasHeight();
-}
-
-function touchDrop() {
-  document.removeEventListener('touchmove', touchDrag);
-  document.removeEventListener('touchend', touchDrop);
-  selectedElement = null;
-}
-
 function openEditor(el) {
   selectedElement = el;
   editor.classList.remove('hidden');
+  editor.classList.remove('collapsed');
 
   const isImg = el.tagName === 'IMG';
   const isBtn = el.tagName === 'BUTTON';
@@ -174,17 +142,13 @@ form.addEventListener('submit', e => {
   const size = editSize.value;
 
   if (selectedElement.tagName === 'IMG') {
-    if (text.startsWith("http")) {
-      selectedElement.src = text;
-    } else {
-      alert("Please enter a valid image URL.");
-    }
+    if (text.startsWith("http")) selectedElement.src = text;
+    else return alert("Please enter a valid image URL.");
     selectedElement.style.width = size + 'px';
   } else {
     selectedElement.textContent = text;
     selectedElement.style.color = color;
     selectedElement.style.fontSize = size + "px";
-
     if (selectedElement.tagName === 'BUTTON') {
       selectedElement.style.backgroundColor = editBgColor.value;
     }
@@ -212,14 +176,12 @@ deleteBtn.addEventListener('click', () => {
 function adjustCanvasHeight() {
   const elements = canvas.querySelectorAll('.element');
   let maxBottom = 0;
-
   elements.forEach(el => {
     const rect = el.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
     const bottom = rect.bottom - canvasRect.top;
     maxBottom = Math.max(maxBottom, bottom);
   });
-
   canvas.style.minHeight = (maxBottom + 40) + 'px';
 }
 
@@ -231,9 +193,13 @@ function rgbToHex(rgb) {
 document.addEventListener('click', (e) => {
   const isClickInsideEditor = editor.contains(e.target);
   const isEditingElement = selectedElement?.contains?.(e.target);
-
   if (!isClickInsideEditor && !isEditingElement) {
     editor.classList.add('hidden');
     selectedElement = null;
   }
+});
+
+toggleBtn.addEventListener('click', () => {
+  editor.classList.toggle('collapsed');
+  toggleBtn.textContent = editor.classList.contains('collapsed') ? '⬆' : '⬇';
 });

@@ -81,8 +81,8 @@ main {
   border-radius: 16px;
   padding: 25px;
   position: relative;
-  transition: all 0.3s ease;
-  overflow: visible;
+  overflow: auto;
+  max-height: 80vh;
 }
 
 .placeholder {
@@ -97,10 +97,14 @@ main {
   cursor: pointer;
   color: white;
   font-family: inherit;
+  max-width: 90%;
+  word-wrap: break-word;
 }
 
 .element img {
-  max-width: none;
+  width: 100%;
+  max-width: 150px;
+  height: auto;
   border-radius: 8px;
   box-shadow: 0 0 10px #00ffe0;
 }
@@ -126,6 +130,12 @@ button.element {
   z-index: 999;
   max-width: 300px;
   color: white;
+}
+
+.editor.collapsed {
+  height: 40px;
+  overflow: hidden;
+  padding: 10px;
 }
 
 .editor h3 {
@@ -175,6 +185,14 @@ button.element {
   color: white;
 }
 
+.editor button.small {
+  background: transparent;
+  color: white;
+  font-size: 18px;
+  padding: 5px;
+  border: 1px solid #00ffe0;
+}
+
 .hidden {
   display: none;
 }
@@ -203,5 +221,10 @@ button.element {
   .placeholder {
     margin-top: 100px;
     font-size: 1.1rem;
+  }
+
+  main {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
