@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Drag & Drop Website Builder</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1> Website Builder</h1>
+  </header>
+
+  <main>
+    <div id="tools" class="tools">
+      <div class="tool" draggable="true" data-type="text" title="Text">📝</div>
+      <div class="tool" draggable="true" data-type="image" title="Image">🖼️</div>
+      <div class="tool" draggable="true" data-type="button" title="Button">🔘</div>
+    </div>
+
+    <div id="canvas" class="canvas">
+      <p class="placeholder">Drop elements here</p>
+    </div>
+
+    <div id="editor" class="editor hidden">
+      <h3>Edit Element</h3>
+      <form id="editForm">
+        <textarea id="editText" rows="3" placeholder="Text or Image URL"></textarea>
+        <input type="color" id="editColor" title="Text Color">
+        <input type="number" id="editSize" placeholder="Font Size">
+        <input type="color" id="editBgColor" class="hidden" title="Button Background Color">
+        <button type="submit">Apply</button>
+        <button type="button" id="deleteBtn" class="danger">Delete</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
