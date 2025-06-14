@@ -17,32 +17,6 @@ tools.forEach(tool => {
   tool.addEventListener('dragstart', e => {
     e.dataTransfer.setData('type', tool.dataset.type);
   });
-
-  // Touch support for mobile
-  tool.addEventListener('touchstart', e => {
-    const type = tool.dataset.type;
-    const touch = e.touches[0];
-    const el = document.createElement(type === 'text' ? 'p' : type === 'image' ? 'img' : 'button');
-
-    if (type === 'text') el.textContent = 'Edit me!';
-    else if (type === 'image') {
-      el.src = 'https://via.placeholder.com/150';
-      el.style.width = '150px';
-    } else {
-      el.textContent = 'Click me';
-      el.style.backgroundColor = '#00ffe0';
-    }
-
-    el.classList.add('element');
-    el.style.left = `${touch.clientX - canvas.getBoundingClientRect().left}px`;
-    el.style.top = `${touch.clientY - canvas.getBoundingClientRect().top}px`;
-
-    enableDragging(el);
-    el.addEventListener('click', () => openEditor(el));
-    canvas.appendChild(el);
-    adjustCanvasHeight();
-    document.querySelector('.placeholder')?.remove();
-  });
 });
 
 canvas.addEventListener('dragover', e => e.preventDefault());
@@ -52,17 +26,20 @@ canvas.addEventListener('drop', e => {
   const type = e.dataTransfer.getData('type');
   let el;
 
-  if (type === 'text') el = document.createElement('p');
-  else if (type === 'image') el = document.createElement('img');
-  else el = document.createElement('button');
-
-  if (type === 'text') el.textContent = 'Edit me!';
-  else if (type === 'image') {
+  if (type === 'text') {
+    el = document.createElement('p');
+    el.textContent = 'Edit me!';
+  } else if (type === 'image') {
+    el = document.createElement('img');
     el.src = 'https://via.placeholder.com/150';
     el.style.width = '150px';
-  } else {
+  } else if (type === 'button') {
+    el = document.createElement('button');
     el.textContent = 'Click me';
     el.style.backgroundColor = '#00ffe0';
+  } else {
+    console.warn('Unknown element type:', type);
+    return; // Prevent inserting anything unexpected
   }
 
   el.classList.add('element');
@@ -72,7 +49,6 @@ canvas.addEventListener('drop', e => {
   enableDragging(el);
   el.addEventListener('click', () => openEditor(el));
   canvas.appendChild(el);
-
   adjustCanvasHeight();
   document.querySelector('.placeholder')?.remove();
 });
@@ -115,8 +91,7 @@ function drop() {
 
 function openEditor(el) {
   selectedElement = el;
-  editor.classList.remove('hidden');
-  editor.classList.remove('collapsed');
+  editor.classList.remove('hidden', 'collapsed');
 
   const isImg = el.tagName === 'IMG';
   const isBtn = el.tagName === 'BUTTON';
